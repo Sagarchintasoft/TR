@@ -1,0 +1,168 @@
+{% extends 'portal/base.html' %}
+{% block title %}Book Seats - {{ showtime.movie.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .screen-indicator {
+        background: #e9ecef;
+        height: 35px;
+        line-height: 35px;
+        letter-spacing: 4px;
+        font-weight: bold;
+    }
+    .seat-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 45px);
+        gap: 10px;
+        justify-content: center;
+    }
+    .seat {
+        width: 45px;
+        height: 45px;
+        border: 2px solid #6c757d;
+        border-radius: 6px;
+        background-color: #ffffff;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease-in-out;
+    }
+    .seat:hover:not(.booked):not(.selected) {
+        background-color: #dee2e6;
+    }
+    .seat.selected {
+        background-color: #198754;
+        color: white;
+        border-color: #198754;
+    }
+    .seat.booked {
+        background-color: #dc3545;
+        color: white;
+        border-color: #dc3545;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow-sm border-0 p-4">
+            <h2 class="fw-bold mb-2">Book Tickets: {{ showtime.movie.title }}</h2>
+            <p class="text-muted">
+                Show Date: <strong>{{ showtime.show_date }}</strong> | 
+                Time: <strong>{{ showtime.show_time|time:"H:i" }}</strong> | 
+                Screen: <strong>{{ showtime.screen_number }}</strong> | 
+                Price per seat: <strong>₹<span id="unitPrice">{{ ticket_price_float }}</span></strong>
+            </p>
+            <hr>
+
+            <div class="text-center mb-4">
+                <div class="screen-indicator rounded text-muted shadow-sm mb-4">SCREEN THIS WAY</div>
+                <div id="seatMatrix" class="seat-grid mb-3"></div>
+
+                <div class="d-flex justify-content-center gap-4 text-small text-muted mt-3">
+                    <div><span class="d-inline-block rounded border" style="width:15px; height:15px; background:#fff;"></span> Available</div>
+                    <div><span class="d-inline-block rounded" style="width:15px; height:15px; background:#198754;"></span> Selected</div>
+                    <div><span class="d-inline-block rounded" style="width:15px; height:15px; background:#dc3545;"></span> Booked</div>
+                </div>
+            </div>
+
+            <form method="post" id="bookingForm" class="mt-4">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Your Name</label>
+                    {{ form.customer_name }}
+                    {{ form.customer_name.errors }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Email Address</label>
+                    {{ form.customer_email }}
+                    {{ form.customer_email.errors }}
+                </div>
+
+                {{ form.selected_seats }}
+
+                <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-3">
+                    <div>
+                        <span class="text-muted">Selected Seats: <strong id="selectedSeatsDisplay" class="text-dark">None</strong></span><br>
+                        <span class="text-muted">Total Price: <strong class="text-success fs-5">₹<span id="totalPriceDisplay">0.00</span></strong></span>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-lg px-4" id="submitBtn" disabled>Confirm Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const rows = ['A', 'B', 'C', 'D', 'E'];
+    const cols = 8;
+    const ticketPrice = parseFloat(document.getElementById('unitPrice').innerText);
+    const bookedSeatsArray = {{ booked_seats|safe }};
+
+    const seatMatrixContainer = document.getElementById('seatMatrix');
+    const selectedSeatsInput = document.getElementById('id_selected_seats');
+    const selectedSeatsDisplay = document.getElementById('selectedSeatsDisplay');
+    const totalPriceDisplay = document.getElementById('totalPriceDisplay');
+    const submitBtn = document.getElementById('submitBtn');
+
+    let selectedSeats = [];
+
+    rows.forEach(rowLetter => {
+        for (let i = 1; i <= cols; i++) {
+            const seatId = `${rowLetter}${i}`;
+            const seatDiv = document.createElement('div');
+            seatDiv.classList.add('seat');
+            seatDiv.innerText = seatId;
+            seatDiv.dataset.seat = seatId;
+
+            if (bookedSeatsArray.includes(seatId)) {
+                seatDiv.classList.add('booked');
+            } else {
+                seatDiv.addEventListener('click', () => toggleSeat(seatId, seatDiv));
+            }
+
+            seatMatrixContainer.appendChild(seatDiv);
+        }
+    });
+
+    function toggleSeat(seatId, element) {
+        if (element.classList.contains('booked')) return;
+
+        if (element.classList.contains('selected')) {
+            element.classList.remove('selected');
+            selectedSeats = selectedSeats.filter(s => s !== seatId);
+        } else {
+            element.classList.add('selected');
+            selectedSeats.push(seatId);
+        }
+
+        updateBookingSummary();
+    }
+
+    function updateBookingSummary() {
+        selectedSeatsInput.value = selectedSeats.join(',');
+        
+        if (selectedSeats.length > 0) {
+            selectedSeatsDisplay.innerText = selectedSeats.join(', ');
+            totalPriceDisplay.innerText = (selectedSeats.length * ticketPrice).toFixed(2);
+            submitBtn.removeAttribute('disabled');
+        } else {
+            selectedSeatsDisplay.innerText = 'None';
+            totalPriceDisplay.innerText = '0.00';
+            submitBtn.setAttribute('disabled', 'true');
+        }
+    }
+</script>
+{% endblock %}

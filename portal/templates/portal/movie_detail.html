@@ -1,0 +1,57 @@
+{% extends 'portal/base.html' %}
+{% block title %}{{ movie.title }} - Details{% endblock %}
+{% block content %}
+<div class="row mb-5">
+    <div class="col-md-4">
+        <img src="{{ movie.poster_url }}" class="img-fluid rounded shadow" alt="{{ movie.title }}" style="width: 100%; max-height: 500px; object-fit: cover;">
+    </div>
+    <div class="col-md-8">
+        <h1 class="fw-bold">{{ movie.title }}</h1>
+        <p class="text-muted"><span class="badge bg-secondary">{{ movie.genre }}</span> | {{ movie.duration }} mins | Released: {{ movie.release_date }}</p>
+        <p class="text-warning fs-5">★ {{ movie.average_rating }} / 5.0</p>
+        <hr>
+        <p>{{ movie.description }}</p>
+        
+        <h4 class="mt-4 mb-3">Available Showtimes</h4>
+        <div class="d-flex flex-wrap gap-2">
+            {% for show in showtimes %}
+                <a href="{% url 'book_seats' show.id %}" class="btn btn-outline-dark text-start">
+                    📅 {{ show.show_date }} @ {{ show.show_time|time:"H:i" }} <br>
+                    <small class="text-muted">Screen {{ show.screen_number }} | ₹{{ show.ticket_price }}</small>
+                </a>
+            {% empty %}
+                <p class="text-muted">No showtimes scheduled yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <h3 class="mb-3">Community Reviews</h3>
+        <div class="list-group mb-4">
+            {% for review in reviews %}
+                <div class="list-group-item p-3 mb-2 shadow-sm rounded border-0">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="fw-bold mb-1">{{ review.reviewer_name }}</h6>
+                        <span class="text-warning">★ {{ review.rating }}/5</span>
+                    </div>
+                    <p class="mb-1 text-secondary">{{ review.comment }}</p>
+                    <small class="text-muted" style="font-size: 0.75rem;">{{ review.created_date|date:"M d, Y, H:i" }}</small>
+                </div>
+            {% empty %}
+                <p class="text-muted">No reviews yet. Be the first to share your thoughts!</p>
+            {% endfor %}
+        </div>
+
+        <div class="card p-4 shadow-sm border-0">
+            <h4 class="mb-3">Leave a Review</h4>
+            <form method="post">
+                {% csrf_token %}
+                {{ review_form.as_p }}
+                <button type="submit" class="btn btn-dark">Submit Review</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

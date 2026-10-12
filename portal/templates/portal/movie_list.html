@@ -1,0 +1,40 @@
+{% extends 'portal/base.html' %}
+{% block title %}Now Showing - CinemaHub{% endblock %}
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h1 class="fw-bold">Now Showing</h1>
+        <p class="text-muted">Explore current movies, check ratings, and book your seats.</p>
+    </div>
+    <div class="col-md-4">
+        <form method="get" class="d-flex">
+            <select name="genre" class="form-select me-2" onchange="this.form.submit()">
+                <option value="">All Genres</option>
+                {% for g in genres %}
+                    <option value="{{ g }}" {% if selected_genre == g %}selected{% endif %}>{{ g }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for movie in movies %}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0">
+                <img src="{{ movie.poster_url }}" class="card-img-top" alt="{{ movie.title }}" style="height: 380px; object-fit: cover;">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title fw-bold">{{ movie.title }}</h5>
+                    <p class="text-muted small mb-2"><span class="badge bg-secondary">{{ movie.genre }}</span> • {{ movie.duration }} mins</p>
+                    <p class="text-warning mb-3">★ {{ movie.average_rating }} / 5.0</p>
+                    <a href="{% url 'movie_detail' movie.id %}" class="btn btn-dark mt-auto">View Details & Showtimes</a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted fs-5">No movies found matching your criteria.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
